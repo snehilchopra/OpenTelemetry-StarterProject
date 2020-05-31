@@ -1,2 +1,0 @@
-/usr/bin/ar qc libfoodsystem.grpc.a  CMakeFiles/foodsystem.grpc.dir/foodsystem.grpc.pb.cc.o CMakeFiles/foodsystem.grpc.dir/protos.pb.cc.o CMakeFiles/foodsystem.grpc.dir/foodsystem.pb.cc.o
-/usr/bin/ranlib libfoodsystem.grpc.a

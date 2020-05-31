@@ -1,1 +1,0 @@
-/usr/bin/c++     CMakeFiles/foodsystem_server.dir/foodsystem_server.cc.o  -o ../bin/foodsystem_server  -Wl,-rpath,/usr/local/lib ../protos/libfoodsystem.grpc.a /usr/local/lib/libgrpc++_reflection.so /usr/local/lib/libgrpc++.so /usr/local/lib/libgrpc.so -lpthread -ldl 
