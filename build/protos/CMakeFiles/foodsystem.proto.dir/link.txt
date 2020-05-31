@@ -1,0 +1,2 @@
+/usr/bin/ar qc libfoodsystem.proto.a  CMakeFiles/foodsystem.proto.dir/protos.pb.cc.o CMakeFiles/foodsystem.proto.dir/foodsystem.pb.cc.o
+/usr/bin/ranlib libfoodsystem.proto.a

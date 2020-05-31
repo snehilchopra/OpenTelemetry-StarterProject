@@ -1,0 +1,4 @@
+# Hashes of file build rules.
+db7e551c2d420965e374e39b3b9a01fd protos/foodsystem.grpc.pb.cc
+3195df4da6ebfc9bd2a835bec504adcc protos/foodsystem.pb.h
+4cb4a73b532722ab4250db3d6dd28e53 protos/protos.pb.h
