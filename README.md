@@ -1,1 +1,1 @@
-# OpenTelemetry-StarterProject
+Food finder service
