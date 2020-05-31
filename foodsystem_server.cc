@@ -12,19 +12,23 @@ public:
   grpc::Status GetVendors(grpc::ServerContext* context,
                         const foodsupplier::Ingredient* request,
                         foodsupplier::List* reply) override {
-    auto it = suppliers.find(request->name());
-    if (it == suppliers.end()) {
-      const std::string& h = "";
-      reply->set_items(h);
-    } else {
-      const std::string& h = it->second[0];
-      reply->set_items(h);
+    auto it = suppliers.begin();
+
+    for(;it!=suppliers.end();it++){
+      std::vector<std::string>& ingredients = it->second;
+      for(auto ingredient: ingredients){
+        if(ingredient == request->name()){
+          reply->add_items(it->first);
+          break;
+        }
+      }
     }
+
     return grpc::Status::OK;
   }
 
 private:
-  std::map<std::string, std::vector<std::string>> suppliers = {{"Amazon", {"onion"}}};
+  std::map<std::string, std::vector<std::string>> suppliers = {{"Amazon", {"onion", "tomato"}}, {"Walmart", {"onion", "eggs", "milk"}}, {"Costco", {"eggs", "potato"}}};
 
 };
 

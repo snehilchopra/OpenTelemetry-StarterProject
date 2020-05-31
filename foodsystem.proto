@@ -15,5 +15,5 @@ message Ingredient {
 }
 
 message List {
-    string items = 1;
+    repeated string items = 1;
 }
