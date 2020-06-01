@@ -1,12 +1,12 @@
 syntax = "proto3";
 
 // Namespace
-package foodsupplier;
+package foodsystem;
 
-// The FoodSupplier service definition.
-service FoodSupplier {
-    rpc GetVendors (Ingredient) returns (List) {};
-   
+// The FoodSystem service definition.
+service FoodSystem {
+    rpc GetSuppliers (Ingredient) returns (SupplierList) {};
+    rpc GetInfoFromVendors (IngredientInfo) returns (InventoryInfo) {};
 }
 
 // The request message containing two integer values.
@@ -14,6 +14,20 @@ message Ingredient {
     string name = 1;
 }
 
-message List {
+message SupplierList {
     repeated string items = 1;
+}
+
+message ItemInfo {
+    string vendor = 1;
+    double price = 2;
+}
+
+message IngredientInfo {
+    string name = 1;
+    repeated string vendors = 2;
+}
+
+message InventoryInfo {
+    repeated ItemInfo iteminfo = 1;
 }

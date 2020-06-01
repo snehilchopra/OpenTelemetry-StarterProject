@@ -1,0 +1,5 @@
+/usr/local/google/home/snehilc/Desktop/OpenTelemetry-StarterProject/build/CMakeFiles/rebuild_cache.dir
+/usr/local/google/home/snehilc/Desktop/OpenTelemetry-StarterProject/build/CMakeFiles/edit_cache.dir
+/usr/local/google/home/snehilc/Desktop/OpenTelemetry-StarterProject/build/CMakeFiles/foodvendor.dir
+/usr/local/google/home/snehilc/Desktop/OpenTelemetry-StarterProject/build/CMakeFiles/foodsupplier.dir
+/usr/local/google/home/snehilc/Desktop/OpenTelemetry-StarterProject/build/CMakeFiles/foodfinder.dir

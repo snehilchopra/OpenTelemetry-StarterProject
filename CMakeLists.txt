@@ -61,7 +61,7 @@ include_directories("${CMAKE_CURRENT_BINARY_DIR}")
 
 # Targets greeter_[async_](client|server)
 foreach(_target
-  foodsystem_client foodsystem_server)
+  foodfinder foodsupplier foodvendor)
   add_executable(${_target} "${_target}.cc"
     ${hw_proto_srcs}
     ${hw_grpc_srcs})
