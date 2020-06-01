@@ -28,7 +28,9 @@ public:
   }
 
 private:
-  std::map<std::string, std::vector<std::string>> suppliers = {{"Amazon", {"onion", "tomato"}}, {"Walmart", {"onion", "eggs", "milk"}}, {"Costco", {"eggs", "potato"}}};
+  std::map<std::string, std::vector<std::string>> suppliers = {{"Amazon", {"onion", "tomato"}},
+                                                               {"Walmart", {"onion", "eggs", "milk"}}, 
+                                                               {"Costco", {"eggs", "potato"}}};
 
 };
 
