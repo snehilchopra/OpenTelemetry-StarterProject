@@ -19,15 +19,15 @@ public:
         item->set_price(inventory[request->vendors(i)][request->name()]);
         item->set_vendor(request->vendors(i));
     }
-    
+
     return grpc::Status::OK;
   }
 
 private:
 
-    std::unordered_map<std::string, std::map<std::string, double>> inventory = {{"Amazon", {{"onion", 2.49}, {"tomato", 2.59}}},
-                                                                                {"Costco", {{"eggs", 1.3}, {"potato", 3.2}}},
-                                                                                {"Walmart", {{"onion",3.49}, {"eggs", 2.2}, {"milk", 12}}}
+    std::unordered_map<std::string, std::map<std::string, double>> inventory = {{"Amazon", {{"onion", 10}, {"tomato", 8}}},
+                                                                                {"Walmart", {{"onion", 5}, {"eggs", 3}, {"milk", 12}}},
+                                                                                {"Costco", {{"eggs", 2}, {"milk", 11}}}
                                                                                 };
 
 };
@@ -37,14 +37,14 @@ void RunServer() {
   FoodVendor service;
 
   grpc::ServerBuilder builder;
-  
+
   builder.AddListeningPort(server_address, grpc::InsecureServerCredentials());
-  
+
   builder.RegisterService(&service);
   std::unique_ptr<grpc::Server> server(builder.BuildAndStart());
   std::cout << "Server listening on " << server_address << std::endl;
 
-  
+
   server->Wait();
 }
 
@@ -52,4 +52,4 @@ int main(int argc, char** argv) {
   RunServer();
 
   return 0;
-}
+} 

@@ -25,7 +25,6 @@ public:
         request.set_name(ingredient);
 
         SupplierList reply;
-
        
         ClientContext context;
 

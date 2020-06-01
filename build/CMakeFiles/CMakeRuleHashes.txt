@@ -1,2 +1,0 @@
-# Hashes of file build rules.
-7aa3474626834ed5ba61fbf5709b40e3 foodsystem.pb.cc
