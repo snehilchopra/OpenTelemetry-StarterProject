@@ -27,7 +27,7 @@ private:
 
     std::unordered_map<std::string, std::map<std::string, double>> inventory = {{"Amazon", {{"onion", 10}, {"tomato", 8}}},
                                                                                 {"Walmart", {{"onion", 5}, {"eggs", 3}, {"milk", 12}}},
-                                                                                {"Costco", {{"eggs", 2}, {"milk", 11}}}
+                                                                                {"Costco", {{"eggs", 2}, {"potato", 11}}}
                                                                                 };
 
 };
