@@ -15,9 +15,9 @@
 #include "opencensus/trace/sampler.h"
 
 /* 
-*  This class implements the FoodSupplier service. We only implement the
-*  the 'GetSuppliers' method of the FoodSystem Service. This will be invoked
-*  by the running gRPC server.
+* This class implements the FoodSupplier service. We only implement the
+* the 'GetSuppliers' method of the FoodSystem Service. This will be invoked
+* by the running gRPC server.
 */
 class FoodSupplier final : public foodsystem::FoodSystem::Service {
 public:
@@ -33,7 +33,7 @@ public:
   grpc::Status GetSuppliers(grpc::ServerContext* context,
                         const foodsystem::Ingredient* request,
                         foodsystem::SupplierList* reply) override {
-    
+
     // opencensus::trace::Span span = grpc::GetSpanFromServerContext(context);
     // span.AddAttribute("my_attribute", "blue");
     // span.AddAnnotation("Fetching list of potential suppliers");
@@ -54,16 +54,19 @@ public:
   }
 
 private:
-  // Statically stored database of suppliers and their respective inventory 
+  /* Statically stored database of suppliers and their respective inventory */
   std::map<std::string, std::vector<std::string>> suppliers = {{"Amazon", {"onion", "tomato"}},
                                                                {"Walmart", {"onion", "eggs", "milk"}}, 
                                                                {"Costco", {"eggs", "potato"}}};
 
 };
 
+/*
+* Runs the gRPC Server
+*/
 void RunServer() {
   // The server address of the form "address:port"
-  std::string server_address("0.0.0.0:50051");
+  std::string server_address("127.0.0.1:9001");
   FoodSupplier service;
 
   // Register the OpenCensus gRPC plugin to enable stats and tracing in gRPC.

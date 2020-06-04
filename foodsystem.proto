@@ -6,7 +6,7 @@ package foodsystem;
 // The FoodSystem service definition.
 service FoodSystem {
     rpc GetSuppliers (Ingredient) returns (SupplierList) {};
-    rpc GetInfoFromVendors (IngredientInfo) returns (InventoryInfo) {};
+    rpc GetInfoFromVendor (PriceRequest) returns (PriceInfo) {};
 }
 
 // The request message containing two integer values.
@@ -18,16 +18,11 @@ message SupplierList {
     repeated string items = 1;
 }
 
-message ItemInfo {
+message PriceRequest {
     string vendor = 1;
-    double price = 2;
+    string ingredient = 2;
 }
 
-message IngredientInfo {
-    string name = 1;
-    repeated string vendors = 2;
-}
-
-message InventoryInfo {
-    repeated ItemInfo iteminfo = 1;
+message PriceInfo {
+    double price = 1;
 }

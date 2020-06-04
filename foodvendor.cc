@@ -18,7 +18,7 @@
 
 /*
 * This class implements the FoodVendor service. We only implement the
-* the 'GetInfoFromVendors' method of the FoodSystem Service. This will be invoked
+* the 'GetInfoFromVendor' method of the FoodSystem Service. This will be invoked
 * by the running gRPC server.
 */
 class FoodVendor final : public foodsystem::FoodSystem::Service {
@@ -34,33 +34,32 @@ public:
   * @param reply - Server generated reply which contains the list of potential suppliers
   * @return grpc::Status::OK - A field which tells us that the operation completed successfully
   */
-  grpc::Status GetInfoFromVendors(grpc::ServerContext* context,
-                        const foodsystem::IngredientInfo* request,
-                        foodsystem::InventoryInfo* reply) override {
+  grpc::Status GetInfoFromVendor(grpc::ServerContext* context,
+                        const foodsystem::PriceRequest* request,
+                        foodsystem::PriceInfo* reply) override {
+
     // opencensus::trace::Span span = grpc::GetSpanFromServerContext(context);
     // span.AddAttribute("my_attribute", "red");
-    // span.AddAnnotation("Fetching inventory info from vendors");
+    // span.AddAnnotation("Fetching inventory info from " + request.vendor());
 
-    // Fetch the price of them ingredient from each vendor
-    int size = request->vendors_size();
-    for(int i = 0 ; i < size; i++){
-        foodsystem::ItemInfo* item = reply->add_iteminfo();
-        item->set_price(inventory[request->vendors(i)][request->name()]);
-        item->set_vendor(request->vendors(i));
-    }
+    // Fetch the price of the ingredient from the vendor
+    reply->set_price(inventory[request->vendor()][request->ingredient()]);
 
     return grpc::Status::OK;
   }
 
 private:
-    // Statically stored database of suppliers and their respective inventory and price
-    std::unordered_map<std::string, std::map<std::string, double>> inventory = {{"Amazon", {{"onion", 10}, {"tomato", 8}}},
-                                                                                {"Walmart", {{"onion", 5}, {"eggs", 3}, {"milk", 12}}},
-                                                                                {"Costco", {{"eggs", 2}, {"potato", 11}}}
+    /* Statically stored database of suppliers and their respective inventory and price */
+    std::unordered_map<std::string, std::map<std::string, double>> inventory = {{"Amazon", {{"onion", 2.39}, {"tomato", 1.99}}},
+                                                                                {"Walmart", {{"onion", 2.99}, {"eggs", 1.39}, {"milk", 11}}},
+                                                                                {"Costco", {{"eggs", 0.99}, {"potato", 4.99}}}
                                                                                 };
 
 };
 
+/*
+* Runs the gRPC Server
+*/
 void RunServer() {
   // Register the OpenCensus gRPC plugin to enable stats and tracing in gRPC.
   grpc::RegisterOpenCensusPlugin();
@@ -68,7 +67,7 @@ void RunServer() {
   RegisterExporters();
 
   // The server address of the form "address:port"
-  std::string server_address("0.0.0.0:9008");
+  std::string server_address("127.0.0.1:9002");
   FoodVendor service;
 
   grpc::ServerBuilder builder;
