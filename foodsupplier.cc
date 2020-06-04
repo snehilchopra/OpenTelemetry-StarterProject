@@ -34,10 +34,6 @@ public:
                         const foodsystem::Ingredient* request,
                         foodsystem::SupplierList* reply) override {
 
-    // opencensus::trace::Span span = grpc::GetSpanFromServerContext(context);
-    // span.AddAttribute("my_attribute", "blue");
-    // span.AddAnnotation("Fetching list of potential suppliers");
-
     // Fetch the suppliers which have the user-specified ingredient
     auto it = suppliers.begin();
     for(;it!=suppliers.end();it++){

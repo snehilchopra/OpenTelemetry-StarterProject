@@ -37,11 +37,7 @@ public:
   grpc::Status GetInfoFromVendor(grpc::ServerContext* context,
                         const foodsystem::PriceRequest* request,
                         foodsystem::PriceInfo* reply) override {
-
-    // opencensus::trace::Span span = grpc::GetSpanFromServerContext(context);
-    // span.AddAttribute("my_attribute", "red");
-    // span.AddAnnotation("Fetching inventory info from " + request.vendor());
-
+                          
     // Fetch the price of the ingredient from the vendor
     reply->set_price(inventory[request->vendor()][request->ingredient()]);
 
