@@ -108,9 +108,8 @@ std::vector<std::string> GetSuppliers(std::string& ingredient,
 * @param vendors - List of vendors who have the user specified ingredient
 * @param parent_span - The span of which we create child spans for each RPC
 * @param stub - FoodSystem stub used to send RPCs to FoodVendor service
-* @return prices - the map which will hold the {key, value} pairs of the form {vendor, price of the ingredeint}
 */
-std::unordered_map<std::string, double> GetInfoFromVendor(std::string& ingredient,
+void GetInfoFromVendor(std::string& ingredient,
                         std::vector<std::string>& vendors,
                         opencensus::trace::Span& parent_span,
                         opencensus::trace::AlwaysSampler& sampler,

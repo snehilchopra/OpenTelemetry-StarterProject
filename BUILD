@@ -112,3 +112,31 @@ cc_binary(
         "@com_google_absl//absl/time",
     ],
 )
+
+# build docker images
+load("@io_bazel_rules_docker//cc:image.bzl", "cc_image")
+
+
+cc_image(
+    name = "foodfinder_image",
+    binary = ":foodfinder",
+)
+
+cc_image(
+    name = "foodsupplier_image",
+    binary = ":foodsupplier",
+)
+
+cc_image(
+    name = "foodvendor_image",
+    binary = ":foodvendor",
+)
+
+platform(
+    name = "linux_x86",
+    constraint_values = [
+        "@platforms//os:linux",
+        "@platforms//cpu:x86_64",
+        ":glibc_2_29",
+    ],
+)
