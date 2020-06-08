@@ -58,8 +58,8 @@ const auto rpc_latency_view_descriptor = opencensus::stats::ViewDescriptor()
 /*############################# RPC ERRORS METRIC ##########################*/
 ABSL_CONST_INIT const absl::string_view rpc_errors_measure_name = "rpc errors count";
 
-const opencensus::stats::MeasureDouble rpc_errors_measure = 
-     opencensus::stats::MeasureDouble::Register(rpc_errors_measure_name , 
+const opencensus::stats::MeasureInt64 rpc_errors_measure = 
+     opencensus::stats::MeasureInt64::Register(rpc_errors_measure_name , 
                                                 "Rpc Errors Count", 
                                                 "errors");
 

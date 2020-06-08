@@ -37,7 +37,7 @@ std::vector<std::string> GetSuppliers(std::string& ingredient,
     absl::Time start = absl::Now();
 
     // Send the RPC
-    Status status_fs = stub->GetSuppliers(&context_fs, request_fs, &reply_fs);
+    Status status = stub->GetSuppliers(&context_fs, request_fs, &reply_fs);
 
     // Get current time (used for measuring latency of rpc)
     absl::Time end = absl::Now();
@@ -46,6 +46,10 @@ std::vector<std::string> GetSuppliers(std::string& ingredient,
     // Record data for metrics
     opencensus::stats::Record({{rpc_count_measure, 1}});
     opencensus::stats::Record({{rpc_latency_measure, latency}});
+
+    if(!status.ok()){
+        opencensus::stats::Record({{rpc_errors_measure, 1}});
+    }
 
     std::vector<std::string> suppliers;
 
@@ -102,6 +106,9 @@ void GetInfoFromVendor(std::string& ingredient,
         absl::Time end = absl::Now();
         double latency = absl::ToDoubleMilliseconds(end - start);
 
+        if(!status.ok()){
+            opencensus::stats::Record({{rpc_errors_measure, 1}});
+        }
         // Record data for metrics
         opencensus::stats::Record({{rpc_count_measure, 1}});
         opencensus::stats::Record({{rpc_latency_measure, latency}});
