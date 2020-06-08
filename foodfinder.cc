@@ -129,17 +129,16 @@ void GetInfoFromVendor(std::string& ingredient,
 */
 void RungRPC() {
     // Register the OpenCensus gRPC plugin to enable stats and tracing in gRPC.
-	grpc::RegisterOpenCensusPlugin();
-
-	RegisterExporters();
+    grpc::RegisterOpenCensusPlugin();
+    RegisterExporters();
 
     rpc_errors_view_descriptor.RegisterForExport();
     rpc_count_view_descriptor.RegisterForExport();
     rpc_latency_view_descriptor.RegisterForExport();
 
     // Create a channel to the FoodSupplier service to send RPCs over.
-	std::shared_ptr<grpc::Channel> foodsupplier_channel = grpc::CreateChannel("127.0.0.1:9001", grpc::InsecureChannelCredentials());	
-	std::unique_ptr<FoodSystem::Stub> foodsupplier_stub = FoodSystem::NewStub(foodsupplier_channel);
+    std::shared_ptr<grpc::Channel> foodsupplier_channel = grpc::CreateChannel("127.0.0.1:9001", grpc::InsecureChannelCredentials());
+    std::unique_ptr<FoodSystem::Stub> foodsupplier_stub = FoodSystem::NewStub(foodsupplier_channel);
 
     // Create a channel to the FoodVendor service to send RPCs over.
     std::shared_ptr<grpc::Channel> foodvendor_channel = grpc::CreateChannel("127.0.0.1:9002", grpc::InsecureChannelCredentials());	
