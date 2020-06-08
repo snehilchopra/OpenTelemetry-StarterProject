@@ -55,13 +55,12 @@ cc_library(
 
 cc_binary(
     name = "foodfinder",
-    srcs = ["foodfinder.cc"],
+    srcs = ["foodfinder.cc", "foodfinder.h"],
     deps = [
         ":foodsystem_cc_grpc",
         ":exporters",
         "@com_github_grpc_grpc//:grpc++",
         "@com_github_grpc_grpc//:grpc_opencensus_plugin",
-
         "@io_opencensus_cpp//opencensus/tags",
         "@io_opencensus_cpp//opencensus/tags:context_util",
         "@io_opencensus_cpp//opencensus/tags:with_tag_map",
@@ -75,7 +74,7 @@ cc_binary(
 
 cc_binary(
     name = "foodvendor",
-    srcs = ["foodvendor.cc"],
+    srcs = ["foodvendor.cc", "foodvendor.h"],
     deps = [
         ":foodsystem_cc_grpc",
         ":exporters",
@@ -93,18 +92,15 @@ cc_binary(
 
 cc_binary(
     name = "foodsupplier",
-    srcs = ["foodsupplier.cc"],
+    srcs = ["foodsupplier.cc", "foodsupplier.h"],
     deps = [
         ":foodsystem_cc_grpc",
         ":exporters",
         "@com_github_grpc_grpc//:grpc++",
         "@com_github_grpc_grpc//:grpc_opencensus_plugin",
-
         "@io_opencensus_cpp//opencensus/tags",
         "@io_opencensus_cpp//opencensus/tags:context_util",
         "@io_opencensus_cpp//opencensus/tags:with_tag_map",
-
-
         "@io_opencensus_cpp//opencensus/trace",
         "@io_opencensus_cpp//opencensus/trace:context_util",
         "@io_opencensus_cpp//opencensus/trace:with_span",
@@ -130,13 +126,4 @@ cc_image(
 cc_image(
     name = "foodvendor_image",
     binary = ":foodvendor",
-)
-
-platform(
-    name = "linux_x86",
-    constraint_values = [
-        "@platforms//os:linux",
-        "@platforms//cpu:x86_64",
-        ":glibc_2_29",
-    ],
 )

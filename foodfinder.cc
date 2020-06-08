@@ -12,63 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <iostream>
-#include <memory>
-#include <string>
-#include <stdlib.h>
+#include "foodfinder.h"
 
-#include <grpc++/grpc++.h>
-#include <grpcpp/opencensus.h>
-
-#include "foodsystem.grpc.pb.h"
-
-#include "exporters.h"
-#include "absl/strings/str_cat.h"
-#include "absl/time/clock.h"
-#include "opencensus/trace/trace_config.h"
-#include "opencensus/trace/context_util.h"
-#include "opencensus/trace/sampler.h"
-#include "opencensus/stats/aggregation.h"
-#include "opencensus/stats/bucket_boundaries.h"
-#include "opencensus/stats/view_descriptor.h"
-#include "opencensus/tags/context_util.h"
-#include "opencensus/tags/tag_key.h"
-#include "opencensus/tags/tag_map.h"
-#include "opencensus/stats/stats.h"
-
-using grpc::Channel;
-using grpc::ClientContext;
-using grpc::Status;
-
-using foodsystem::SupplierList;
-using foodsystem::Ingredient;
-using foodsystem::FoodSystem;
-using foodsystem::PriceInfo;
-using foodsystem::PriceRequest;
-
-
-/*
-* Adds synthetic delays to better simulate processing time
-* and view more descriptive traces on GCP.
-*
-* @param parent_span - The span of which we make a child and add a small delay for descriptive results
-* @param sampler - An Always sampler which exports/process every span
-* @param delay - Amount of delay ( Range is [0,20] )
-*/
 void AddDelay(opencensus::trace::Span* parent_span, opencensus::trace::AlwaysSampler* sampler, int delay){
     auto child_span = opencensus::trace::Span::StartSpan("Delay Span", parent_span, {sampler});
     child_span.AddAnnotation("delay");
     absl::SleepFor(absl::Milliseconds(delay));  // Working hard here.
     child_span.End();
-}
+};
 
-/*
-* Fetches list of suppliers who have a user-specified ingredient.
-*
-* @param ingredient - The user specified ingredient 
-* @param stub - The FoodSystem stub used to send RPCs
-* @return suppliers - The list of suppliers who have the user specified ingredient
-*/
+
 std::vector<std::string> GetSuppliers(std::string& ingredient,
                                       std::unique_ptr<FoodSystem::Stub>& stub){
     // Set up the request to send to FoodSupplier service
@@ -80,8 +33,19 @@ std::vector<std::string> GetSuppliers(std::string& ingredient,
     
     ClientContext context_fs;
 
+    // Get current time (used for measuring latency of rpc)
+    absl::Time start = absl::Now();
+
     // Send the RPC
     Status status_fs = stub->GetSuppliers(&context_fs, request_fs, &reply_fs);
+
+    // Get current time (used for measuring latency of rpc)
+    absl::Time end = absl::Now();
+    double latency = absl::ToDoubleMilliseconds(end - start);
+
+    // Record data for metrics
+    opencensus::stats::Record({{rpc_count_measure, 1}});
+    opencensus::stats::Record({{rpc_latency_measure, latency}});
 
     std::vector<std::string> suppliers;
 
@@ -100,15 +64,7 @@ std::vector<std::string> GetSuppliers(std::string& ingredient,
     return suppliers;
 }
 
-/*
-* Fetches price of the ingredient from each vendor which has the user
-* specified ingredient.
-*   
-* @param ingredient - The user specified ingredient
-* @param vendors - List of vendors who have the user specified ingredient
-* @param parent_span - The span of which we create child spans for each RPC
-* @param stub - FoodSystem stub used to send RPCs to FoodVendor service
-*/
+
 void GetInfoFromVendor(std::string& ingredient,
                         std::vector<std::string>& vendors,
                         opencensus::trace::Span& parent_span,
@@ -138,8 +94,17 @@ void GetInfoFromVendor(std::string& ingredient,
         // Add random, synthetic delay  
         AddDelay(&span, &sampler, rand() % 20 + 1);
 
+        absl::Time start = absl::Now();
+
         // Send the rpc
         Status status = stub->GetInfoFromVendor(&context, price_request, &price_info);
+
+        absl::Time end = absl::Now();
+        double latency = absl::ToDoubleMilliseconds(end - start);
+
+        // Record data for metrics
+        opencensus::stats::Record({{rpc_count_measure, 1}});
+        opencensus::stats::Record({{rpc_latency_measure, latency}});
 
         // End the span
         span.End();
@@ -159,7 +124,6 @@ void GetInfoFromVendor(std::string& ingredient,
     std::cout << std::endl;
 }
 
-
 /*
 * Runs the main gRPC procedure
 */
@@ -168,6 +132,10 @@ void RungRPC() {
 	grpc::RegisterOpenCensusPlugin();
 
 	RegisterExporters();
+
+    rpc_errors_view_descriptor.RegisterForExport();
+    rpc_count_view_descriptor.RegisterForExport();
+    rpc_latency_view_descriptor.RegisterForExport();
 
     // Create a channel to the FoodSupplier service to send RPCs over.
 	std::shared_ptr<grpc::Channel> foodsupplier_channel = grpc::CreateChannel("127.0.0.1:9001", grpc::InsecureChannelCredentials());	
@@ -207,7 +175,7 @@ void RungRPC() {
         fs_span.End();
         
 
-        
+
         // Create a span for tracing the RPC from Foodfinder to FoodVendor service
         auto fv_span = opencensus::trace::Span::StartSpan("Fetching inventory info from vendors.", &system_span, {&sampler});
         fv_span.AddAnnotation("Fetching inventory info from vendors.");
@@ -216,7 +184,7 @@ void RungRPC() {
         AddDelay(&fv_span, &sampler, 20);
 
         // Fetch inventory info from vendors
-        GetInfoFromVendor(ingredient, suppliers, fv_span, sampler, foodvendor_stub);
+        GetInfoFromVendor(ingredient, suppliers, fv_span, sampler, foodvendor_stub);        
 
         // End the current span
         fv_span.End();
@@ -234,9 +202,7 @@ void RungRPC() {
     while (true) {
         absl::SleepFor(absl::Seconds(10));
     }
-    
 }
-
 
 int main(int argc, char** argv) {
     RungRPC();
