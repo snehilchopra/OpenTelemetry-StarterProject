@@ -9,7 +9,7 @@
 
 ### Metrics
 
-## Framework/Platform/Language Used
+## Frameworks/Languages Used
 
 ## How to use?
 
