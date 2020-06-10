@@ -38,8 +38,8 @@ bazel build :all
 ### Running the services
 To run the 3 services, open 3 different terminals and run each of the following commands on a separate terminal:
 ```
-sh scripts/foodfinder.h
-sh scripts/foodvendor.h
-sh scripts/foodsupplier.h
+sh scripts/foodfinder.sh
+sh scripts/foodvendor.sh
+sh scripts/foodsupplier.sh
 ```
 **Note** - Make sure to run the FoodSupplier and FoodVendor services BEFORE running the FoodFinder service.
