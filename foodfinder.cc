@@ -44,8 +44,8 @@ std::vector<std::string> GetSuppliers(std::string& ingredient,
     double latency = absl::ToDoubleMilliseconds(end - start);
 
     // Record data for metrics
-    opencensus::stats::Record({{rpc_count_measure, 1}});
-    opencensus::stats::Record({{rpc_latency_measure, latency}});
+    opencensus::stats::Record({{rpc_count_measure, 1}}, {{status_key, !status.ok() ? "Error" : "OK"}});
+    opencensus::stats::Record({{rpc_latency_measure, latency}}, {{status_key, !status.ok() ? "Error" : "OK"}});
 
     if(!status.ok()){
         opencensus::stats::Record({{rpc_errors_measure, 1}});
@@ -69,7 +69,7 @@ std::vector<std::string> GetSuppliers(std::string& ingredient,
 }
 
 
-void GetInfoFromVendor(std::string& ingredient,
+void GetInfoFromVendors(std::string& ingredient,
                         std::vector<std::string>& vendors,
                         opencensus::trace::Span& parent_span,
                         opencensus::trace::AlwaysSampler& sampler,
@@ -79,46 +79,91 @@ void GetInfoFromVendor(std::string& ingredient,
     // of the form {vendor, price of the ingredeint}
     std::unordered_map<std::string, double> prices;
 
-    // Declare request and reply variables to use for all RPCs 
-    PriceRequest price_request;
-    PriceInfo price_info;
+    // Map to hold the PriceInfo object s
+    std::unordered_map<std::string, PriceInfo> price_infos;
+
+    // Map to hold the trace spans for each vendor's RPC
+    std::unordered_map<std::string, opencensus::trace::Span> spans;
+
+    // The producer-consumer queue for asnchronous notifications
+    CompletionQueue cq;
 
     // Get price info from each vendor
     for(std::string& vendor: vendors){
+        PriceRequest price_request;
+        PriceInfo price_info;
+
+        // Get a reference to the PriceInfo object which will be populated by the server
+        // and later used to check the price in the client
+        price_infos[vendor] = price_info;        
+
         // Set up request
         price_request.set_vendor(vendor);
         price_request.set_ingredient(ingredient);
 
-        ClientContext context;
+        Status status;
+        ClientContext context;        
 
-        // Add a span to monitor the RPC
+        // Create rpc object
+        std::unique_ptr<ClientAsyncResponseReader<PriceInfo>> rpc(stub->PrepareAsyncGetInfoFromVendor(&context, price_request, &cq));
+
+        // Begin the span for the current vendor
         opencensus::trace::Span span = opencensus::trace::Span::StartSpan("Fetching price info from " + vendor, &parent_span, {&sampler});
         span.AddAnnotation("Fetching price info from " + vendor);
 
-        // Add random, synthetic delay  
-        AddDelay(&span, &sampler, rand() % 20 + 1);
+        // ERROR: This type of insertion is needed because the default 'Span()' constructor is a deleted function
+        //        and maps need a default constructor if 'map[key] = value' type insertion is wanted
+        // spans[vendor] = span;
 
-        absl::Time start = absl::Now();
+        // Add to map using insert, which does not need a default constructor
+        spans.insert({{vendor, span}});
 
-        // Send the rpc
-        Status status = stub->GetInfoFromVendor(&context, price_request, &price_info);
+        // Initiate the rpc call
+        rpc->StartCall();
 
-        absl::Time end = absl::Now();
-        double latency = absl::ToDoubleMilliseconds(end - start);
+        // Request that, upon completion of the RPC, "reply" be updated with the
+        // server's response; "status" with the indication of whether the operation
+        // was successful. Tag the request with the vendor's name.
+        rpc->Finish(&price_infos[vendor], &status, static_cast<void*>(new std::string(vendor)));
+    }
 
-        if(!status.ok()){
+
+    void* got_tag;
+    bool ok = false;
+    int counter = vendors.size();
+
+    // Keep looping till we have not received response for all vendors
+    // and then block till we get the next result in the completion queue
+    while(counter && cq.Next(&got_tag, &ok)){
+        // Record data for metrics
+        opencensus::stats::Record({{rpc_count_measure, 1}}, {{status_key, ok ? "Error" : "OK"}});
+
+        if(!ok){
             opencensus::stats::Record({{rpc_errors_measure, 1}});
         }
-        // Record data for metrics
-        opencensus::stats::Record({{rpc_count_measure, 1}});
-        opencensus::stats::Record({{rpc_latency_measure, latency}});
 
-        // End the span
-        span.End();
+        // Get vendor name from tag
+        std::string* vendor = static_cast<std::string*>(got_tag);
 
-        // Add to map
-        prices[vendor] = price_info.price();
+        // Find the current vendor's corresponding span and end it
+        auto it = spans.find(*vendor);
+        it->second.End();
+
+        // ERROR: The line of code below produces an error because the default constructor 
+        //        opencensus::trace::Span() has been marked as delete
+        // spans[*vendor].End();
+
+        // Decrement counter to keep track of how many vendors we have received price info for
+        counter--;
+
+        // Add to prices map for displaying results at the end
+        prices[*vendor] = price_infos[*vendor].price();
+
+        // Free allocated memory
+        delete vendor;
     }
+
+    cq.Shutdown();
     
     // Print results
     std::cout << "----------------------------\n";
@@ -126,14 +171,16 @@ void GetInfoFromVendor(std::string& ingredient,
     std::cout << "----------------------------\n";
     auto it = prices.begin();
     for(;it != prices.end(); it++){
-        std::cout << it->first << "\t|\t$" << it->second << std::endl;
+        if(it->second)
+            std::cout << it->first << "\t|\t$" << it->second  << std::endl;
+        else
+            std::cout << it->first << "\t|\t" << "Error" << std::endl;
     }
+
     std::cout << std::endl;
 }
 
-/*
-* Runs the main gRPC procedure
-*/
+
 void RungRPC() {
     // Register the OpenCensus gRPC plugin to enable stats and tracing in gRPC.
     grpc::RegisterOpenCensusPlugin();
@@ -172,7 +219,7 @@ void RungRPC() {
         fs_span.AddAnnotation("Sending request for fetching suppliers.");
 
         // Add synthetic delay
-        AddDelay(&fs_span, &sampler, 20);
+        AddDelay(&fs_span, &sampler, (rand() % 20) + 1);
 
         // Get list of potential suppliers
         std::vector<std::string> suppliers = GetSuppliers(ingredient, foodsupplier_stub);
@@ -187,10 +234,11 @@ void RungRPC() {
         fv_span.AddAnnotation("Fetching inventory info from vendors.");
         
         // Add synthetic delay
-        AddDelay(&fv_span, &sampler, 20);
+        AddDelay(&fv_span, &sampler, (rand() % 20) + 1);
 
         // Fetch inventory info from vendors
-        GetInfoFromVendor(ingredient, suppliers, fv_span, sampler, foodvendor_stub);        
+        if(suppliers.size())
+            GetInfoFromVendors(ingredient, suppliers, fv_span, sampler, foodvendor_stub);        
 
         // End the current span
         fv_span.End();
@@ -206,7 +254,7 @@ void RungRPC() {
     // Sleep while exporters run in the background.
     std::cout << "Client sleeping, ^C to exit.\n";
     while (true) {
-        absl::SleepFor(absl::Seconds(10));
+        absl::SleepFor(absl::Seconds(7));
     }
 }
 

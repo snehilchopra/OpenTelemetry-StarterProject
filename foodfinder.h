@@ -5,6 +5,7 @@
 #include <memory>
 #include <string>
 #include <stdlib.h>
+#include <thread>
 
 #include <grpc++/grpc++.h>
 #include <grpcpp/opencensus.h>
@@ -23,7 +24,9 @@
 #include "opencensus/stats/stats.h"
 
 using grpc::Channel;
+using grpc::ClientAsyncResponseReader;
 using grpc::ClientContext;
+using grpc::CompletionQueue;
 using grpc::Status;
 
 using foodsystem::SupplierList;
@@ -36,9 +39,9 @@ using foodsystem::PriceRequest;
 /* ################################# METRICS ################################## */
 /* ############################################################################ */
 
-auto key1 = opencensus::tags::TagKey::Register("key1");
+opencensus::tags::TagKey status_key = opencensus::tags::TagKey::Register("Status");
 
-/* ############################ RPC LATENCY METRIC ########################## */
+/* ---------------------------- RPC LATENCY METRIC ---------------------------- */
 ABSL_CONST_INIT const absl::string_view rpc_latency_measure_name = "rpc latency";
 
 const opencensus::stats::MeasureDouble rpc_latency_measure = 
@@ -52,10 +55,10 @@ const auto rpc_latency_view_descriptor = opencensus::stats::ViewDescriptor()
     .set_aggregation(opencensus::stats::Aggregation::Distribution(
                 opencensus::stats::BucketBoundaries::Explicit(
                     {0, 7.5, 15, 22.5, 30, 37.5, 45, 52.5, 60, 67.5})))
-    .add_column(key1)
+    .add_column(status_key)
     .set_description("Latency for the RPCs");
 
-/*############################# RPC ERRORS METRIC ##########################*/
+/* ---------------------------- RPC ERRORS METRIC ----------------------------- */
 ABSL_CONST_INIT const absl::string_view rpc_errors_measure_name = "rpc errors count";
 
 const opencensus::stats::MeasureInt64 rpc_errors_measure = 
@@ -67,10 +70,10 @@ const auto rpc_errors_view_descriptor = opencensus::stats::ViewDescriptor()
     .set_name("food_finder/rpc_errors")
     .set_measure(rpc_errors_measure_name)
     .set_aggregation(opencensus::stats::Aggregation::Count())
-    .add_column(key1)
+    .add_column(status_key)
     .set_description("Cumulative count of RPC errors");
 
-/*############################# RPC COUNT METRIC ############################*/
+/* ---------------------------- RPC COUNT METRIC ------------------------------ */
 ABSL_CONST_INIT const absl::string_view rpc_count_measure_name = "rpc count";
 
 const opencensus::stats::MeasureInt64 rpc_count_measure = 
@@ -82,7 +85,7 @@ const auto rpc_count_view_descriptor = opencensus::stats::ViewDescriptor()
     .set_name("food_finder/rpc_count")
     .set_measure(rpc_count_measure_name)
     .set_aggregation(opencensus::stats::Aggregation::Count())
-    .add_column(key1)
+    .add_column(status_key)
     .set_description("Cumulative count of RPCs");
 
 
@@ -133,5 +136,10 @@ void GetInfoFromVendor(std::string& ingredient,
 */
 void RungRPC();
 
+struct tag_struct {
+    std::string vendor;
+    // opencensus::trace::Span span;
+    tag_struct(std::string v): vendor(v){};
+};
 
 #endif

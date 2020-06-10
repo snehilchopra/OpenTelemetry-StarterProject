@@ -16,12 +16,15 @@ grpc::Status FoodSupplier::GetSuppliers(grpc::ServerContext* context,
       }
     }
         
-    return grpc::Status::OK;
+    // Randomize rpc errors
+    if(rand() % 10 + 1 >= 8){
+      return grpc::Status::CANCELLED;
+    } else {
+      return grpc::Status::OK;
+    }
 }
 
-/*
-* Runs the gRPC Server
-*/
+
 void RunServer() {
   // The server address of the form "address:port"
   std::string server_address("127.0.0.1:9001");

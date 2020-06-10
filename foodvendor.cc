@@ -1,37 +1,102 @@
 #include "foodvendor.h"
 
 
-grpc::Status FoodVendor::GetInfoFromVendor(grpc::ServerContext* context,
-                        const foodsystem::PriceRequest* request,
-                        foodsystem::PriceInfo* reply) {
-                          
-    // Fetch the price of the ingredient from the vendor
-    reply->set_price(inventory[request->vendor()][request->ingredient()]);
-
-    return grpc::Status::OK;
+ServerImpl::~ServerImpl() {
+    server_->Shutdown();
+    // Always shutdown the completion queue after the server.
+    cq_->Shutdown();
 }
 
 
-void RunServer() {
-  // Register the OpenCensus gRPC plugin to enable stats and tracing in gRPC.
-  grpc::RegisterOpenCensusPlugin();
+void ServerImpl::Run() {
+    std::string server_address("127.0.0.1:9002");
 
-  RegisterExporters();
+    ServerBuilder builder;
 
-  // The server address of the form "address:port"
-  std::string server_address("127.0.0.1:9002");
-  FoodVendor service;
+    // Listen on the given address without any authentication mechanism.
+    builder.AddListeningPort(server_address, grpc::InsecureServerCredentials());
 
-  grpc::ServerBuilder builder;
-  builder.AddListeningPort(server_address, grpc::InsecureServerCredentials());
-  builder.RegisterService(&service);
-  std::unique_ptr<grpc::Server> server(builder.BuildAndStart());
-  std::cout << "Server listening on " << server_address << std::endl;
+    // Register "service_" as the instance through which we'll communicate with
+    // clients. In this case it corresponds to an *asynchronous* service.
+    builder.RegisterService(&service_);
 
-  server->Wait();
+    // Get hold of the completion queue used for the asynchronous communication
+    // with the gRPC runtime.
+    cq_ = builder.AddCompletionQueue();
+
+    // Finally assemble the server.
+    server_ = builder.BuildAndStart();
+
+    std::cout << "Server listening on " << server_address << std::endl;
+
+    // Proceed to the server's main loop.
+    HandleRpcs();
 }
+
+
+ServerImpl::CallData::CallData(FoodSystem::AsyncService* service, ServerCompletionQueue* cq)
+          : service_(service), cq_(cq), responder_(&ctx_), status_(CREATE) {
+    // Invoke the serving logic right away.
+    Proceed();
+}
+
+void ServerImpl::CallData::Proceed() {
+    if (status_ == CREATE) {
+      // Make this instance progress to the PROCESS state.
+      status_ = PROCESS;
+
+      // As part of the initial CREATE state, we *request* that the system
+      // start processing GetInfoFromVendor requests.
+      service_->RequestGetInfoFromVendor(&ctx_, &request_, &responder_, cq_, cq_,
+                                this);
+
+    } else if (status_ == PROCESS) {
+      // Spawn a new CallData instance to serve new clients while we process
+      // the one for this CallData. The instance will deallocate itself as
+      // part of its FINISH state.
+      new CallData(service_, cq_);
+
+      // The actual processing: Fetch the price of the ingredient from
+      // the vendor
+      reply_.set_price(inventory[request_.vendor()][request_.ingredient()]);
+
+      // Sleep for a random period of time
+      absl::SleepFor(absl::Milliseconds(rand() % 20 + 1));
+
+
+      // Let the gRPC runtime know we've finished, using the
+      // memory address of this instance as the uniquely identifying tag for
+      // the event.
+      status_ = FINISH;
+      responder_.Finish(reply_, (rand() % 10) + 1 >= 2 ? Status::OK : Status::CANCELLED, this);
+
+
+    } else {
+      GPR_ASSERT(status_ == FINISH);
+      // Once in the FINISH state, deallocate ourselves (CallData).
+      delete this;
+    }
+};
+
+void ServerImpl::HandleRpcs() {
+    // Spawn a new CallData instance to serve new clients.
+    new CallData(&service_, cq_.get());
+    void* tag;  // uniquely identifies a request.
+    bool ok;
+    while (true) {
+      // Block waiting to read the next event from the completion queue. The
+      // event is uniquely identified by its tag, which in this case is the
+      // memory address of a CallData instance.
+      GPR_ASSERT(cq_->Next(&tag, &ok));
+      GPR_ASSERT(ok);
+      static_cast<CallData*>(tag)->Proceed();
+    }
+}
+
 
 int main(int argc, char** argv) {
-  RunServer();
+  ServerImpl server;
+  server.Run();
+
   return 0;
 } 
