@@ -24,8 +24,8 @@ The order of RPCs that relay between the services can be inferred easily from th
 ![Screenshot 2020-06-10 at 11 57 07 AM](https://user-images.githubusercontent.com/31712484/84308641-b6556700-ab13-11ea-86a1-033492a7b9d2.png)
 
 ## Frameworks/Languages Used
--Languages: C++
--Frameworks: gRPC, Protocol Buffers, and Opencensus library.
+- Languages: C++
+- Frameworks: gRPC, Protocol Buffers, and Opencensus library.
 
 ## How to use?
 
