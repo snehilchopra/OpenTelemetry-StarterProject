@@ -3,7 +3,12 @@
 This system consists of three services: 
 - The FoodFinder service allows a user to specify an ingredient they need, and consults with other services to try to find vendors with that for the user. 
 - The FoodSupplier service acts as a database of FoodVendors, providing a candidate set of vendors who it believes may deal in the ingredient the user is looking for.
-- The FoodVendor service offers certain ingredients at certain prices, and maintains an inventory of each
+- The FoodVendor service offers certain ingredients at certain prices, and maintains an inventory of each.
+
+## Workflow
+
+The order of RPCs that relay between the services can be inferred easily from the flowchart below
+![Screenshot 2020-06-10 at 12 16 51 PM](https://user-images.githubusercontent.com/31712484/84308985-498e9c80-ab14-11ea-86ce-fb79d3ab3283.png)
 
 
 ## Screenshots
