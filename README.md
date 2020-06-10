@@ -13,18 +13,33 @@ The order of RPCs that relay between the services can be inferred easily from th
 
 ## Screenshots
 
-### Metrics
+### Results
+![Screenshot 2020-06-10 at 12 23 56 PM](https://user-images.githubusercontent.com/31712484/84309870-9c1c8880-ab15-11ea-8815-7378417b4f1b.png)
+
+
+### Metrics on Google Cloud
 ![Screenshot 2020-06-10 at 11 56 39 AM](https://user-images.githubusercontent.com/31712484/84308643-b6edfd80-ab13-11ea-99e8-6cc731b4eebd.png)
 
-### Trace
+### Traces on Google Cloud
 ![Screenshot 2020-06-10 at 11 57 07 AM](https://user-images.githubusercontent.com/31712484/84308641-b6556700-ab13-11ea-86a1-033492a7b9d2.png)
 
 ## Frameworks/Languages Used
+-Languages: C++
+-Frameworks: gRPC, Protocol Buffers, and Opencensus library.
 
 ## How to use?
 
 ### Building
+To build all 3 services, simply run the following command on the command line:
+```
+bazel build :all
+```
 
 ### Running the services
-
-
+To run the 3 services, open 3 different terminals and run each of the following commands on a separate terminal:
+```
+sh scripts/foodfinder.h
+sh scripts/foodvendor.h
+sh scripts/foodsupplier.h
+```
+**Note** - Make sure to run the FoodSupplier and FoodVendor services BEFORE running the FoodFinder service.
