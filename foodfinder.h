@@ -136,10 +136,4 @@ void GetInfoFromVendor(std::string& ingredient,
 */
 void RungRPC();
 
-struct tag_struct {
-    std::string vendor;
-    // opencensus::trace::Span span;
-    tag_struct(std::string v): vendor(v){};
-};
-
 #endif
