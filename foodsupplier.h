@@ -40,9 +40,12 @@ public:
 
 private:
   /* Statically stored database of suppliers and their respective inventory */
-  std::map<std::string, std::vector<std::string>> suppliers = {{"Amazon", {"onion", "tomato"}},
-                                                               {"Walmart", {"onion", "eggs", "milk"}}, 
-                                                               {"Costco", {"eggs", "potato"}}};
+  std::map<std::string, std::vector<std::string>> suppliers = {{"Amazon", {"onion", "tomato", "cheese", "eggs", "mango"}},
+                                                               {"Walmart", {"onion", "eggs", "milk", "orange"}}, 
+                                                               {"Costco", {"eggs", "potato", "cheese", "tomato", "avocado"}},
+                                                               {"Bazaar", {"onion", "milk", "potato", "orange"}},
+                                                               {"Safeway", {"orange", "cheese", "avocado"}}
+                                                               };
 
 };
 

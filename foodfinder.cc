@@ -18,6 +18,96 @@
 
 #include "foodfinder.h"
 
+using grpc::Channel;
+using grpc::ClientAsyncResponseReader;
+using grpc::ClientContext;
+using grpc::CompletionQueue;
+using grpc::Status;
+
+using foodsystem::SupplierList;
+using foodsystem::Ingredient;
+using foodsystem::FoodSystem;
+using foodsystem::PriceInfo;
+using foodsystem::PriceRequest;
+
+
+/* ############################################################################ */
+/* ################################# METRICS ################################## */
+/* ############################################################################ */
+
+opencensus::tags::TagKey status_key = opencensus::tags::TagKey::Register("Status");
+
+/* ---------------------------- RPC LATENCY METRIC ---------------------------- */
+ABSL_CONST_INIT const absl::string_view rpc_latency_measure_name = "rpc latency";
+
+const opencensus::stats::MeasureDouble rpc_latency_measure = 
+     opencensus::stats::MeasureDouble::Register(rpc_latency_measure_name , 
+                                                "Latency measure for rpc calls", 
+                                                "ms");
+
+const auto rpc_latency_view_descriptor = opencensus::stats::ViewDescriptor()
+    .set_name("food_finder/rpc_latency")
+    .set_measure(rpc_latency_measure_name)
+    .set_aggregation(opencensus::stats::Aggregation::Distribution(
+                opencensus::stats::BucketBoundaries::Explicit(
+                    {0, 7.5, 15, 22.5, 30, 37.5, 45, 52.5, 60, 67.5})))
+    .add_column(status_key)
+    .set_description("Latency for the RPCs");
+
+/* ---------------------------- RPC ERRORS METRIC ----------------------------- */
+ABSL_CONST_INIT const absl::string_view rpc_errors_measure_name = "rpc errors count";
+
+const opencensus::stats::MeasureInt64 rpc_errors_measure = 
+     opencensus::stats::MeasureInt64::Register(rpc_errors_measure_name , 
+                                                "Rpc Errors Count", 
+                                                "errors");
+
+const auto rpc_errors_view_descriptor = opencensus::stats::ViewDescriptor()
+    .set_name("food_finder/rpc_errors")
+    .set_measure(rpc_errors_measure_name)
+    .set_aggregation(opencensus::stats::Aggregation::Count())
+    .add_column(status_key)
+    .set_description("Cumulative count of RPC errors");
+
+/* ---------------------------- RPC COUNT METRIC ------------------------------ */
+ABSL_CONST_INIT const absl::string_view rpc_count_measure_name = "rpc count";
+
+const opencensus::stats::MeasureInt64 rpc_count_measure = 
+     opencensus::stats::MeasureInt64::Register(rpc_count_measure_name , 
+                                                "Total rpc calls made", 
+                                                "rpcs");
+
+const auto rpc_count_view_descriptor = opencensus::stats::ViewDescriptor()
+    .set_name("food_finder/rpc_count")
+    .set_measure(rpc_count_measure_name)
+    .set_aggregation(opencensus::stats::Aggregation::Count())
+    .add_column(status_key)
+    .set_description("Cumulative count of RPCs");
+
+
+/* -------------------------- SUPPLIERS PER QUERY METRIC --------------------------- */
+ABSL_CONST_INIT const absl::string_view suppliers_per_query_measure_name = "Suppliers per query";
+
+const opencensus::stats::MeasureInt64 suppliers_per_query_measure = 
+     opencensus::stats::MeasureInt64::Register(suppliers_per_query_measure_name, 
+                                                "Suppliers per query/rpc", 
+                                                "suppliers");
+
+const auto suppliers_per_query_view_descriptor = opencensus::stats::ViewDescriptor()
+    .set_name("food_finder/suppliers_per_query")
+    .set_measure(suppliers_per_query_measure_name)
+    .set_aggregation(opencensus::stats::Aggregation::Distribution(
+                opencensus::stats::BucketBoundaries::Explicit(
+                {0,1,2,3,4,5,6,7,8,9,10})))
+    .add_column(status_key)
+    .set_description("Distribution of suppliers per query");
+
+
+/* ############################################################################ */
+/* ####################### FUNCTION IMPLEMENTATIONS ########################### */
+/* ############################################################################ */
+
+
 void AddDelay(opencensus::trace::Span* parent_span, opencensus::trace::AlwaysSampler* sampler, int delay){
     auto child_span = opencensus::trace::Span::StartSpan("Delay Span", parent_span, {sampler});
     child_span.AddAnnotation("delay");
@@ -38,34 +128,36 @@ std::vector<std::string> GetSuppliers(std::string& ingredient,
     ClientContext context_fs;
 
     // Get current time (used for measuring latency of rpc)
-    absl::Time start = absl::Now();
+    const absl::Time start = absl::Now();
 
     // Send the RPC
-    Status status = stub->GetSuppliers(&context_fs, request_fs, &reply_fs);
+    const Status status = stub->GetSuppliers(&context_fs, request_fs, &reply_fs);
 
     // Get current time (used for measuring latency of rpc)
-    absl::Time end = absl::Now();
-    double latency = absl::ToDoubleMilliseconds(end - start);
+    const absl::Time end = absl::Now();
+    const double latency = absl::ToDoubleMilliseconds(end - start);
 
     // Record data for metrics
     opencensus::stats::Record({{rpc_count_measure, 1}}, {{status_key, !status.ok() ? "Error" : "OK"}});
     opencensus::stats::Record({{rpc_latency_measure, latency}}, {{status_key, !status.ok() ? "Error" : "OK"}});
+    opencensus::stats::Record({{suppliers_per_query_measure, reply_fs.items_size()}}, {{status_key, !status.ok() ? "Error" : "OK"}});
 
     if(!status.ok()){
         opencensus::stats::Record({{rpc_errors_measure, 1}});
+        std::cout << "Error while fetching suppliers" << std::endl;
+        return {};
     }
 
     std::vector<std::string> suppliers;
 
     std::cout << "SEARCH RESULTS FOR " << ingredient << "\n\n";
 
-    // Check if we got any suppliers and accordingly append to the 'suppliers' vector
-    if(!(int)reply_fs.items_size()) {
+    // Check if we got any suppliers and accordingly populate 'suppliers' vector
+    if(reply_fs.items_size() == 0) {
         std::cout << "No suppliers have " << ingredient << std::endl << std::endl;
-        return {};
     } else {
-        for(int i = 0; i < (int)reply_fs.items_size(); i++){
-            suppliers.push_back(reply_fs.items(i));
+        for(const std::string& vendor: reply_fs.items()){
+            suppliers.push_back(vendor);
         } 
     }
 
@@ -73,11 +165,11 @@ std::vector<std::string> GetSuppliers(std::string& ingredient,
 }
 
 
-void GetInfoFromVendors(std::string& ingredient,
-                        std::vector<std::string>& vendors,
+void GetInfoFromVendors(const std::string& ingredient,
+                        const std::vector<std::string>& vendors,
                         opencensus::trace::Span& parent_span,
                         opencensus::trace::AlwaysSampler& sampler,
-                        std::unique_ptr<FoodSystem::Stub>& stub){
+                        const std::unique_ptr<FoodSystem::Stub>& stub){
 
     // Declare the map which will hold the {key, value} pairs
     // of the form {vendor, price of the ingredeint}
@@ -92,8 +184,16 @@ void GetInfoFromVendors(std::string& ingredient,
     // The producer-consumer queue for asnchronous notifications
     CompletionQueue cq;
 
+    // A tag struct which contains the name of the vendor and the time when the rpc
+    // was made to that vendor the fetch price info
+    struct tag {
+        std::string vendor;
+        absl::Time start_time;
+        tag(std::string vendor, absl::Time start_time) : vendor(vendor), start_time(start_time) {}
+    };
+
     // Get price info from each vendor
-    for(std::string& vendor: vendors){
+    for(const std::string& vendor: vendors){
         PriceRequest price_request;
         PriceInfo price_info;
 
@@ -122,13 +222,17 @@ void GetInfoFromVendors(std::string& ingredient,
         // Add to map using insert, which does not need a default constructor
         spans.insert({{vendor, span}});
 
+        // Start time
+        const absl::Time start_time = absl::Now();
+
         // Initiate the rpc call
         rpc->StartCall();
 
         // Request that, upon completion of the RPC, "reply" be updated with the
         // server's response; "status" with the indication of whether the operation
         // was successful. Tag the request with the vendor's name.
-        rpc->Finish(&price_infos[vendor], &status, static_cast<void*>(new std::string(vendor)));
+        // rpc->Finish(&price_infos[vendor], &status, static_cast<void*>(new std::string(vendor)));
+        rpc->Finish(&price_infos[vendor], &status, static_cast<void*>(new tag(vendor, start_time)));
     }
 
 
@@ -139,18 +243,27 @@ void GetInfoFromVendors(std::string& ingredient,
     // Keep looping till we have not received response for all vendors
     // and then block till we get the next result in the completion queue
     while(counter && cq.Next(&got_tag, &ok)){
+        // Get current tag
+        std::unique_ptr<tag> curr_tag((tag*)got_tag);
+
+        // Extract info from the current tag
+        std::string& vendor = curr_tag->vendor;
+        absl::Time& start_time = curr_tag->start_time;
+
+        // Measure latency for receiving info from this particular vendor
+        const absl::Time end = absl::Now();
+        double latency = absl::ToDoubleMilliseconds(end - start_time);
+
         // Record data for metrics
         opencensus::stats::Record({{rpc_count_measure, 1}}, {{status_key, ok ? "Error" : "OK"}});
+        opencensus::stats::Record({{rpc_latency_measure, latency}}, {{status_key, ok ? "Error" : "OK"}});
 
         if(!ok){
             opencensus::stats::Record({{rpc_errors_measure, 1}});
         }
 
-        // Get vendor name from tag
-        std::string* vendor = static_cast<std::string*>(got_tag);
-
         // Find the current vendor's corresponding span and end it
-        auto it = spans.find(*vendor);
+        auto it = spans.find(vendor);
         it->second.End();
 
         // ERROR: The line of code below produces an error because the default constructor 
@@ -161,10 +274,7 @@ void GetInfoFromVendors(std::string& ingredient,
         counter--;
 
         // Add to prices map for displaying results at the end
-        prices[*vendor] = price_infos[*vendor].price();
-
-        // Free allocated memory
-        delete vendor;
+        prices[vendor] = price_infos[vendor].price();
     }
 
     cq.Shutdown();
@@ -193,6 +303,7 @@ void RungRPC() {
     rpc_errors_view_descriptor.RegisterForExport();
     rpc_count_view_descriptor.RegisterForExport();
     rpc_latency_view_descriptor.RegisterForExport();
+    suppliers_per_query_view_descriptor.RegisterForExport();
 
     // Create a channel to the FoodSupplier service to send RPCs over.
     std::shared_ptr<grpc::Channel> foodsupplier_channel = grpc::CreateChannel("127.0.0.1:9001", grpc::InsecureChannelCredentials());

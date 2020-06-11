@@ -78,9 +78,17 @@ class ServerImpl final {
 
     private:
       // Statically stored database of suppliers and their respective inventory and price 
-      std::unordered_map<std::string, std::map<std::string, double>> inventory = {{"Amazon", {{"onion", 2.39}, {"tomato", 1.99}}},
-                                                                                  {"Walmart", {{"onion", 2.99}, {"eggs", 1.39}, {"milk", 11}}},
-                                                                                  {"Costco", {{"eggs", 0.99}, {"potato", 4.99}}}
+      std::unordered_map<std::string, std::map<std::string, double>> inventory = {
+                                                                                  {"Amazon", {{"onion", 2.39}, {"tomato", 1.99},
+                                                                                              {"cheese", 0.89}, {"eggs", 1.5}, {"mango", 4.5}}},
+                                                                                  {"Walmart", {{"onion", 2.99}, {"eggs", 1.39},
+                                                                                               {"milk", 11}, {"orange", 2.8}}},
+                                                                                  {"Costco", {{"eggs", 0.99}, {"potato", 4.99}, {"cheese", 1.1},
+                                                                                              {"tomato", 2.3}, {"avocado", 3.4}}},
+                                                                                  {"Bazaar", {{"onion", 2.4}, {"milk", 9}, {"potato", 4.2},
+                                                                                                {"orange", 1.99}}},
+                                                                                  {"Safeway", {{"orange", 1.5}, {"cheese", 0.5}, 
+                                                                                               {"avocado", 4.1}}}
                                                                                   };
 
       // The means of communication with the gRPC runtime for an asynchronous

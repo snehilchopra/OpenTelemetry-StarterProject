@@ -79,7 +79,7 @@ void ServerImpl::CallData::Proceed() {
       reply_.set_price(inventory[request_.vendor()][request_.ingredient()]);
 
       // Sleep for a random period of time
-      absl::SleepFor(absl::Milliseconds(rand() % 20 + 1));
+      absl::SleepFor(absl::Milliseconds((rand() % 20) + 1));
 
 
       // Let the gRPC runtime know we've finished, using the

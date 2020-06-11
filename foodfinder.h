@@ -41,71 +41,6 @@
 #include "opencensus/tags/tag_key.h"
 #include "opencensus/stats/stats.h"
 
-using grpc::Channel;
-using grpc::ClientAsyncResponseReader;
-using grpc::ClientContext;
-using grpc::CompletionQueue;
-using grpc::Status;
-
-using foodsystem::SupplierList;
-using foodsystem::Ingredient;
-using foodsystem::FoodSystem;
-using foodsystem::PriceInfo;
-using foodsystem::PriceRequest;
-
-/* ############################################################################ */
-/* ################################# METRICS ################################## */
-/* ############################################################################ */
-
-opencensus::tags::TagKey status_key = opencensus::tags::TagKey::Register("Status");
-
-/* ---------------------------- RPC LATENCY METRIC ---------------------------- */
-ABSL_CONST_INIT const absl::string_view rpc_latency_measure_name = "rpc latency";
-
-const opencensus::stats::MeasureDouble rpc_latency_measure = 
-     opencensus::stats::MeasureDouble::Register(rpc_latency_measure_name , 
-                                                "Latency measure for rpc calls", 
-                                                "ms");
-
-const auto rpc_latency_view_descriptor = opencensus::stats::ViewDescriptor()
-    .set_name("food_finder/rpc_latency")
-    .set_measure(rpc_latency_measure_name)
-    .set_aggregation(opencensus::stats::Aggregation::Distribution(
-                opencensus::stats::BucketBoundaries::Explicit(
-                    {0, 7.5, 15, 22.5, 30, 37.5, 45, 52.5, 60, 67.5})))
-    .add_column(status_key)
-    .set_description("Latency for the RPCs");
-
-/* ---------------------------- RPC ERRORS METRIC ----------------------------- */
-ABSL_CONST_INIT const absl::string_view rpc_errors_measure_name = "rpc errors count";
-
-const opencensus::stats::MeasureInt64 rpc_errors_measure = 
-     opencensus::stats::MeasureInt64::Register(rpc_errors_measure_name , 
-                                                "Rpc Errors Count", 
-                                                "errors");
-
-const auto rpc_errors_view_descriptor = opencensus::stats::ViewDescriptor()
-    .set_name("food_finder/rpc_errors")
-    .set_measure(rpc_errors_measure_name)
-    .set_aggregation(opencensus::stats::Aggregation::Count())
-    .add_column(status_key)
-    .set_description("Cumulative count of RPC errors");
-
-/* ---------------------------- RPC COUNT METRIC ------------------------------ */
-ABSL_CONST_INIT const absl::string_view rpc_count_measure_name = "rpc count";
-
-const opencensus::stats::MeasureInt64 rpc_count_measure = 
-     opencensus::stats::MeasureInt64::Register(rpc_count_measure_name , 
-                                                "Total rpc calls made", 
-                                                "rpcs");
-
-const auto rpc_count_view_descriptor = opencensus::stats::ViewDescriptor()
-    .set_name("food_finder/rpc_count")
-    .set_measure(rpc_count_measure_name)
-    .set_aggregation(opencensus::stats::Aggregation::Count())
-    .add_column(status_key)
-    .set_description("Cumulative count of RPCs");
-
 
 /* ############################################################################ */
 /* ############################ HELPER FUNCTIONS ############################## */
@@ -130,7 +65,7 @@ void AddDelay(opencensus::trace::Span* parent_span, opencensus::trace::AlwaysSam
 * @return suppliers - The list of suppliers who have the user specified ingredient
 */
 std::vector<std::string> GetSuppliers(std::string& ingredient,
-                                      std::unique_ptr<FoodSystem::Stub>& stub);
+                                      std::unique_ptr<foodsystem::FoodSystem::Stub>& stub);
 
 
 /*
@@ -142,11 +77,11 @@ std::vector<std::string> GetSuppliers(std::string& ingredient,
 * @param parent_span - The span of which we create child spans for each RPC
 * @param stub - FoodSystem stub used to send RPCs to FoodVendor service
 */
-void GetInfoFromVendor(std::string& ingredient,
-                        std::vector<std::string>& vendors,
-                        opencensus::trace::Span& parent_span,
-                        opencensus::trace::AlwaysSampler& sampler,
-                        std::unique_ptr<FoodSystem::Stub>& stub);
+void GetInfoFromVendor(const std::string& ingredient,
+                       const std::vector<std::string>& vendors,
+                       opencensus::trace::Span& parent_span,
+                       opencensus::trace::AlwaysSampler& sampler,
+                       std::unique_ptr<foodsystem::FoodSystem::Stub>& stub);
 
 
 /*
