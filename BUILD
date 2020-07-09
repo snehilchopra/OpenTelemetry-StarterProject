@@ -116,6 +116,7 @@ load("@io_bazel_rules_docker//cc:image.bzl", "cc_image")
 cc_image(
     name = "foodfinder_image",
     binary = ":foodfinder",
+    base = "@official_debian_bullseye_slim//image",
 )
 
 cc_image(
