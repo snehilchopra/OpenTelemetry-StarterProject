@@ -62,7 +62,7 @@ docker load -i ./bazel-bin/foodfinder_image.tar
 
 
 ```
-docker create network fooddemo
+docker network create fooddemo
 docker run --name foodsupplier --network fooddemo bazel:foodsupplier_image
 docker run --name foodvendor --network fooddemo bazel:foodvendor_image
 docker run -ti --name foodfinder --network fooddemo bazel:foodfinder_image
