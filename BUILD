@@ -122,9 +122,11 @@ cc_image(
 cc_image(
     name = "foodsupplier_image",
     binary = ":foodsupplier",
+    base = "@official_debian_bullseye_slim//image",
 )
 
 cc_image(
     name = "foodvendor_image",
     binary = ":foodvendor",
+    base = "@official_debian_bullseye_slim//image",
 )
