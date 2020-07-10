@@ -27,7 +27,7 @@ grpc::Status FoodSupplier::GetSuppliers(grpc::ServerContext* context,
 
 void RunServer() {
   // The server address of the form "address:port"
-  std::string server_address("127.0.0.1:9001");
+  std::string server_address("0.0.0.0:9001");
   FoodSupplier service;
 
   // Register the OpenCensus gRPC plugin to enable stats and tracing in gRPC.
