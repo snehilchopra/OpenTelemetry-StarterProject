@@ -68,10 +68,6 @@ load(
 
 apple_support_dependencies()
 
-load("@upb//bazel:repository_defs.bzl", "bazel_version_repository")
-
-bazel_version_repository(name = "upb_bazel_version")
-
 
 # Google APIs - used by Stackdriver exporter.
 load("@com_google_googleapis//:repository_rules.bzl", "switched_rules_by_language")
