@@ -27,7 +27,7 @@ ServerImpl::~ServerImpl() {
 
 
 void ServerImpl::Run() {
-    std::string server_address("127.0.0.1:9002");
+    std::string server_address("0.0.0.0:9002");
 
     ServerBuilder builder;
 
