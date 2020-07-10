@@ -306,11 +306,11 @@ void RungRPC() {
     suppliers_per_query_view_descriptor.RegisterForExport();
 
     // Create a channel to the FoodSupplier service to send RPCs over.
-    std::shared_ptr<grpc::Channel> foodsupplier_channel = grpc::CreateChannel("127.0.0.1:9001", grpc::InsecureChannelCredentials());
+    std::shared_ptr<grpc::Channel> foodsupplier_channel = grpc::CreateChannel("foodsupplier:9001", grpc::InsecureChannelCredentials());
     std::unique_ptr<FoodSystem::Stub> foodsupplier_stub = FoodSystem::NewStub(foodsupplier_channel);
 
     // Create a channel to the FoodVendor service to send RPCs over.
-    std::shared_ptr<grpc::Channel> foodvendor_channel = grpc::CreateChannel("127.0.0.1:9002", grpc::InsecureChannelCredentials());	
+    std::shared_ptr<grpc::Channel> foodvendor_channel = grpc::CreateChannel("foodvendor:9002", grpc::InsecureChannelCredentials());	
     std::unique_ptr<FoodSystem::Stub> foodvendor_stub = FoodSystem::NewStub(foodvendor_channel);
 
     // Setup Always sampler so that every span is processed and exported
