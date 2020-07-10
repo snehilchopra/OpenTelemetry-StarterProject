@@ -43,3 +43,27 @@ sh scripts/foodvendor.sh
 sh scripts/foodsupplier.sh
 ```
 **Note** - Make sure to run the FoodSupplier and FoodVendor services BEFORE running the FoodFinder service.
+
+## How to use with Docker?
+
+### Building
+
+
+```
+bazel build :foodsupplier_image.tar
+docker load -i ./bazel-bin/foodsupplier_image.tar
+bazel build :foodvendor_image.tar
+docker load -i ./bazel-bin/foodvendor_image.tar
+bazel build :foodfinder_image.tar
+docker load -i ./bazel-bin/foodfinder_image.tar
+```
+
+### Running
+
+
+```
+docker create network fooddemo
+docker run --name foodsupplier --network fooddemo bazel:foodsupplier_image
+docker run --name foodvendor --network fooddemo bazel:foodvendor_image
+docker run -ti --name foodfinder --network fooddemo bazel:foodfinder_image
+```
